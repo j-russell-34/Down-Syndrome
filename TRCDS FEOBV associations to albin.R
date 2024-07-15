@@ -8,6 +8,8 @@ library(grid)
 library(tibble)
 library(rstatix)
 
+setwd("~/Study_data/Down Syndrome/TRCDS")
+
 #import table/excels to df
 feobv_suvr_df <- read.table("DSCHOL_FEOBV_SUVR.txt",
                             sep="\t", header=FALSE)

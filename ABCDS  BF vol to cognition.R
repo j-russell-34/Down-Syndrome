@@ -8,6 +8,8 @@ library(grid)
 library(tibble)
 
 
+setwd("~/Study_data/Down Syndrome/TRCDS")
+
 #cbf_df <- read.csv("DSCHOL_CBF.csv")
 samseg_df <- read_excel("DSCHOL_samseg.xlsx")
 dnseg_df <- read.csv("DSCHOL_DnSeg_volumes.csv")

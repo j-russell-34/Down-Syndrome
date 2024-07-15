@@ -7,6 +7,7 @@ library(ragg)
 library(ggtext)
 library(ggrepel)
 
+setwd("~/Study_data/Down Syndrome/TRCDS")
 
 braak_df <- read.csv("DSCHOL_MK6240_Braak6.csv")
 

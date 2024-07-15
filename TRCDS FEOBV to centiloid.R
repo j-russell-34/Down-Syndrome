@@ -7,6 +7,8 @@ library(ggpp)
 library(grid)
 library(tibble)
 
+setwd("~/Study_data/Down Syndrome/TRCDS")
+
 #import table/excels to df
 feobv_suvr_df <- read.table("DSCHOL_FEOBV_SUVR.txt",
   sep="\t", header=FALSE)
