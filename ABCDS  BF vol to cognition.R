@@ -15,7 +15,7 @@ samseg_df <- read_excel("DSCHOL_samseg.xlsx")
 dnseg_df <- read.csv("DSCHOL_DnSeg_volumes.csv")
 cog_df <- read.csv("DSCHOL_Cognition.csv")
 sclimbic <- read_excel("FS7sclimbic_v0.xlsx")
-feobv_suvr_df <- read.table("DSCHOL_FEOBV_SUVR.txt",
+feobv_suvr_df <- read.table("DSCHOL_FEOBVQA_SUVR.txt",
                             sep="\t", header=FALSE)
 
 
@@ -38,7 +38,8 @@ feobv_suvr_df_wide <- reshape(data = feobv_suvr_df,
 #add column to feobv_df for timepoint of scan relative to trc_ds BL
 feobv_suvr_df_wide["VISIT"] <- c("Baseline", "Baseline", "M16","Baseline",
                                  "Baseline", "Baseline", "Baseline", "Baseline",
-                                 "Baseline", "Baseline")
+                                 "Baseline", "Baseline", "Baseline", "Baseline",
+                                 "Baseline", "Baseline", "Baseline")
 
 #remove ROIs that are not of interest
 feobv_df <- feobv_suvr_df_wide %>%
@@ -88,9 +89,9 @@ full_df<- transform(full_df, iq_composite = as.numeric(iq_composite),
                              total_fr = as.numeric(total_fr),
                              total_score = as.numeric(total_score))
 
-names(full_df)[names(full_df) == "Left.Basal.Forebrain"] <- 
+names(full_df)[names(full_df) == "Left-Basal-Forebrain"] <- 
   "Left_Basal_Forebrain"
-names(full_df)[names(full_df) == "Right.Basal.Forebrain"] <- 
+names(full_df)[names(full_df) == "Right-Basal-Forebrain"] <- 
   "Right_Basal_Forebrain"
 
 model <- lm(total_fr ~ Left_Basal_Forebrain + iq_composite + samseg_sbtiv, data=full_df)
@@ -137,7 +138,7 @@ summary(model)
 
 
 
-feobv_full_df <- merge(full_df, feobv_df, by=c("SUBJECT"))
+feobv_full_df <- merge(new_cog_df, feobv_df, by=c("SUBJECT"))
 
 #function to calculate p-value of linear model
 lmp <- function (modelobject) {
@@ -160,7 +161,7 @@ beta <- list()
 ROI <- list()
 
 #iterate through list of ROIs, lm with cog performance value
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (total_fr ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   correlation_pvalues <- append(correlation_pvalues, summary(model)$coefficients[,4][2])
@@ -183,7 +184,7 @@ beta <- list()
 ROI <- list()
 
 #iterate through list of ROIs, lm with cog performance value
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (total_score ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   beta <-append(beta, summary(model)$coefficients[,1][2])
@@ -327,7 +328,7 @@ feobv_full_df<- transform(feobv_full_df, personal_info_score = as.numeric(person
                     knowledgeofexaminerscore = as.numeric(knowledgeofexaminerscore))
 
 #iterate through list of ROIs, lm with cog performance value
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (personal_info_score ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   personalinfo_pvalues <- append(personalinfo_pvalues, summary(model)$coefficients[,4][2])
@@ -351,7 +352,7 @@ memobj_pvalues <- list()
 memobjbeta <- list()
 memobjROI <- list()
 
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (memory_object ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   memobj_pvalues <- append(memobj_pvalues, summary(model)$coefficients[,4][2])
@@ -377,7 +378,7 @@ memlocbeta <- list()
 memlocROI <- list()
 
 
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (memory_location ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   memloc_pvalues <- append(memloc_pvalues, summary(model)$coefficients[,4][2])
@@ -402,7 +403,7 @@ apraxiabeta <- list()
 apraxiaROI <- list()
 
 
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (apraxia_score ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   apraxia_pvalues <- append(apraxia_pvalues, summary(model)$coefficients[,4][2])
@@ -428,7 +429,7 @@ languagebeta <- list()
 languageROI <- list()
 
 
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (language_score ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   language_pvalues <- append(language_pvalues, summary(model)$coefficients[,4][2])
@@ -454,7 +455,7 @@ vsbeta <- list()
 vsROI <- list()
 
 
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (visuospatial_score ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   vs_pvalues <- append(vs_pvalues, summary(model)$coefficients[,4][2])
@@ -479,7 +480,7 @@ examinerbeta <- list()
 examinerROI <- list()
 
 
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (knowledgeofexaminerscore ~ feobv_full_df[,c(i)] + iq_composite, 
                data = feobv_full_df)
   examiner_pvalues <- append(examiner_pvalues, summary(model)$coefficients[,4][2])
@@ -503,7 +504,7 @@ iqbeta <- list()
 iqROI <- list()
 
 
-for(i in 76:159){
+for(i in 70:154){
   model <- lm (iq_composite ~ feobv_full_df[,c(i)], 
                data = feobv_full_df)
   iq_pvalues <- append(iq_pvalues, summary(model)$coefficients[,4][2])
