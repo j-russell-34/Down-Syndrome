@@ -10,9 +10,9 @@ library(tibble)
 setwd("~/Study_data/Down Syndrome/TRCDS")
 
 #import table/excels to df
-feobv_suvr_df <- read.table("DSCHOL_FEOBV_SUVR.txt",
+feobv_suvr_df <- read.table("DSCHOL_FEOBVQA_SUVR.txt",
   sep="\t", header=FALSE)
-pib_suvr_df <- read.table("DSCHOL_PiB_SUVR.txt",
+pib_suvr_df <- read.table("DSCHOL_PIB_SUVR.txt",
                             sep="\t", header=FALSE)
 centiloid_df <- read_excel("TRC-DS centiloids 20231215.xlsx")
 
@@ -36,15 +36,16 @@ pib_suvr_df_wide <- reshape(data = pib_suvr_df,
 #add column to feobv_df for timepoint of scan relative to trc_ds BL
 feobv_suvr_df_wide["VISIT"] <- c("Baseline", "Baseline", "M16","Baseline",
                                  "Baseline", "Baseline", "Baseline", "Baseline",
-                                 "Baseline", "Baseline")
+                                 "Baseline", "Baseline", "Baseline", "Baseline",
+                                 "Baseline", "Baseline", "Baseline")
 
 #merge dataframes based on visit and subject name
 #when participants without a m16 amyloid scn will have to edit
-feobv_suvr_df_wide <- merge(feobv_suvr_df_wide, centiloid_df, by=c("SUBJECT",
+feobv_suvr_df_wide_cent <- merge(feobv_suvr_df_wide, centiloid_df, by=c("SUBJECT",
                                                                    "VISIT"))
 
 #remove ROIs that are not of interest
-feobv_df <- feobv_suvr_df_wide %>%
+feobv_df <- feobv_suvr_df_wide_cent %>%
   select(-contains(c("White-Matter", "Cerebellum", "Brain-Stem", "CSF", 
         "choroid", "Air", "Skull", "Vermis", "Pons", "Head")))
 
@@ -204,12 +205,22 @@ pib_suvr_df_wide <- pib_suvr_df_wide %>%
                      "choroid", "Air", "Skull", "Vermis", "Pons", "Head")))
 
 visit_list = list("Baseline","M16", "Baseline", "Baseline","Baseline",
-                  "Baseline", "Baseline", "Baseline", "Baseline")
+                  "Baseline", "Baseline", "Baseline", "Baseline", "Baseline",
+                  "Baseline", "Baseline", "Baseline")
 
 pib_suvr_df <- add_column(pib_suvr_df_wide, Visit = visit_list, .before = "REF_REGION")
 
 #remove participants that do not have an FEOBV scan
-pib_suvr_df <- pib_suvr_df[ pib_suvr_df$SUBJECT %in% feobv_df$SUBJECT, ]
+pib_suvr_df <- pib_suvr_df[ pib_suvr_df$SUBJECT %in% feobv_suvr_df_wide$SUBJECT, ]
+
+feobv_suvr_df_pib <- feobv_suvr_df_wide[ feobv_suvr_df_wide$SUBJECT %in% pib_suvr_df$SUBJECT, ]
+feobv_suvr_df_pib <- add_column(feobv_suvr_df_pib, Visit = visit_list, .before = "REF_REGION")
+
+names(feobv_suvr_df_pib) <- make.names(names(feobv_suvr_df_pib))
+
+feobv_suvr_df_pib <- feobv_suvr_df_pib %>%
+  select(-contains(c("White.Matter", "Cerebellum", "Brain.Stem", "CSF", 
+                     "choroid", "Air", "Skull", "Vermis", "Pons", "Head")))
 
 #generate blank lists to add correlation analysis too
 correlation_coef <- list()
@@ -218,7 +229,7 @@ ROI <- list()
 
 #iterate through list of ROIs, lm with centiloid value
 for(i in 5:88){
-  model <- lm (feobv_df[,c(i)] ~ pib_suvr_df[,c(i)])
+  model <- lm (feobv_suvr_df_pib[,c(i)] ~ pib_suvr_df[,c(i)])
   correlation_coef <- append(correlation_coef, list(summary(model)$r.squared))
   correlation_pvalues <- append(correlation_pvalues, list(lmp(model)))
   ROI <- append(ROI, list(colnames(feobv_df)[i]))
@@ -250,11 +261,35 @@ grob <-grobTree(textGrob(glue('R² = {R2}\np = {pval}'), x=0.1, y=0.1, hjust = 0
 
 png(file="R Amygdala PiB vs FEOBV.png", units="in", width=7, height=5, res=300)
 ggplot(data=data.frame(x=pib_suvr_df$"SUVR.Right.Amygdala",
-                       y=feobv_df$"SUVR.Right.Amygdala"),
+                       y=feobv_suvr_df_pib$"SUVR.Right.Amygdala"),
        aes(x=x, y=y)) +
   geom_point(size=6, color="blue") + 
   geom_smooth(method='lm', color="black")+
   labs(y="Right Amygdala FEOBV SUVR", x= "Right Amygdala PiB SUVR")+ 
+  theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+                     axis.text=element_text(size=16), axis.title=element_text(size=18, face="bold"))+
+  annotation_custom(grob)
+dev.off()
+
+#pull R2 and p from df and round
+R2 <- correlation_df_PiB[which(correlation_df_PiB$ROI == "SUVR.Left.Accumbens.area"), "R2" ]
+R2 <- round(R2[[1]],digits= 4)
+pval <- correlation_df_PiB[which(correlation_df_PiB$ROI == "SUVR.Left.Accumbens.area"), "pvalue"]
+pval <- round(pval[[1]],digits = 4)
+R2 <- sprintf("%.4f", R2)
+pval <- sprintf("%.4f", pval)
+#generate custom annotation to be placed at absolute 0.1,0.1
+grob <-grobTree(textGrob(glue('R² = {R2}\np = {pval}'), x=0.1, y=0.1, hjust = 0,
+                         gp=gpar(col="red", fontsize =18, fontface="bold")))
+
+png(file="L Accumbens PiB vs FEOBV.png", units="in", width=7, height=5, res=300)
+ggplot(data=data.frame(x=pib_suvr_df$"SUVR.Left.Accumbens.area",
+                       y=feobv_suvr_df_pib$"SUVR.Left.Accumbens.area"),
+       aes(x=x, y=y)) +
+  geom_point(size=6, color="blue") + 
+  geom_smooth(method='lm', color="black")+
+  labs(y="Left Accumbens FEOBV SUVR", x= "Left Accumbens PiB SUVR")+ 
   theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
                      panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
                      axis.text=element_text(size=16), axis.title=element_text(size=18, face="bold"))+
@@ -273,7 +308,7 @@ grob <-grobTree(textGrob(glue('R² = {R2}\np = {pval}'), x=0.1, y=0.1, hjust = 0
 
 png(file="L Fusiform PiB vs FEOBV.png", units="in", width=7, height=5, res=300)
 ggplot(data=data.frame(x=pib_suvr_df$"SUVR.ctx.lh.fusiform",
-                       y=feobv_df$"SUVR.ctx.lh.fusiform"),
+                       y=feobv_suvr_df_pib$"SUVR.ctx.lh.fusiform"),
        aes(x=x, y=y)) +
   geom_point(size=6, color="blue") + 
   geom_smooth(method='lm', color="black")+
@@ -296,11 +331,34 @@ grob <-grobTree(textGrob(glue('R² = {R2}\np = {pval}'), x=0.1, y=0.1, hjust = 0
 
 png(file="L Inferiortemporal PiB vs FEOBV.png", units="in", width=7, height=5, res=300)
 ggplot(data=data.frame(x=pib_suvr_df$"SUVR.ctx.lh.inferiortemporal",
-                       y=feobv_df$"SUVR.ctx.lh.inferiortemporal"),
+                       y=feobv_suvr_df_pib$"SUVR.ctx.lh.inferiortemporal"),
        aes(x=x, y=y)) +
   geom_point(size=6, color="blue") + 
   geom_smooth(method='lm', color="black")+
   labs(y="Left Inferior Temporal FEOBV SUVR", x= "Left Inferior Temporal PiB SUVR")+ 
+  theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+                     axis.text=element_text(size=16), axis.title=element_text(size=18, face="bold"))+
+  annotation_custom(grob)
+dev.off()
+
+R2 <- correlation_df_PiB[which(correlation_df_PiB$ROI == "SUVR.ctx.lh.lateraloccipital"), "R2" ]
+R2 <- round(R2[[1]],digits= 4)
+pval <- correlation_df_PiB[which(correlation_df_PiB$ROI == "SUVR.ctx.lh.lateraloccipital"), "pvalue"]
+pval <- round(pval[[1]],digits = 4)
+R2 <- sprintf("%.4f", R2)
+pval <- sprintf("%.4f", pval)
+#generate custom annotation to be placed at absolute 0.1,0.1
+grob <-grobTree(textGrob(glue('R² = {R2}\np = {pval}'), x=0.1, y=0.1, hjust = 0,
+                         gp=gpar(col="red", fontsize =18, fontface="bold")))
+
+png(file="L Lateral Occipital PiB vs FEOBV.png", units="in", width=7, height=5, res=300)
+ggplot(data=data.frame(x=pib_suvr_df$"SUVR.ctx.lh.lateraloccipital",
+                       y=feobv_suvr_df_pib$"SUVR.ctx.lh.lateraloccipital"),
+       aes(x=x, y=y)) +
+  geom_point(size=6, color="blue") + 
+  geom_smooth(method='lm', color="black")+
+  labs(y="Left Lateral Occipital FEOBV SUVR", x= "Left Lateral Occipital PiB SUVR")+ 
   theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
                      panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
                      axis.text=element_text(size=16), axis.title=element_text(size=18, face="bold"))+
@@ -319,7 +377,7 @@ grob <-grobTree(textGrob(glue('R² = {R2}\np = {pval}'), x=0.1, y=0.1, hjust = 0
 
 png(file="L Pericalcarine PiB vs FEOBV.png", units="in", width=7, height=5, res=300)
 ggplot(data=data.frame(x=pib_suvr_df$"SUVR.ctx.lh.pericalcarine",
-                       y=feobv_df$"SUVR.ctx.lh.pericalcarine"),
+                       y=feobv_suvr_df_pib$"SUVR.ctx.lh.pericalcarine"),
        aes(x=x, y=y)) +
   geom_point(size=6, color="blue") + 
   geom_smooth(method='lm', color="black")+
@@ -342,7 +400,7 @@ grob <-grobTree(textGrob(glue('R² = {R2}\np = {pval}'), x=0.1, y=0.1, hjust = 0
 
 png(file="R Pericalcarine PiB vs FEOBV.png", units="in", width=7, height=5, res=300)
 ggplot(data=data.frame(x=pib_suvr_df$"SUVR.ctx.rh.pericalcarine",
-                       y=feobv_df$"SUVR.ctx.rh.pericalcarine"),
+                       y=feobv_suvr_df_pib$"SUVR.ctx.rh.pericalcarine"),
        aes(x=x, y=y)) +
   geom_point(size=6, color="blue") + 
   geom_smooth(method='lm', color="black")+
@@ -352,3 +410,4 @@ ggplot(data=data.frame(x=pib_suvr_df$"SUVR.ctx.rh.pericalcarine",
                      axis.text=element_text(size=16), axis.title=element_text(size=18, face="bold"))+
   annotation_custom(grob)
 dev.off()
+
