@@ -5,6 +5,9 @@ library(glue)
 library(readxl)
 library(ggpp)
 library(grid)
+library(splines)
+
+setwd("~/Study_data/Down Syndrome/ABCDS")
 
 dnsegdata_df <- read.csv("ABCDS_DnSeg_volumes.csv")
 sclimbicdata_df <- read.csv("ABCDS_sclimbic_volumes.csv")
@@ -94,6 +97,7 @@ ggplot(dnseg_abcds_df,aes(Amyloid..centiloids., Right_DnSeg)) +
   annotation_custom(grob)
 dev.off()
 
+#sex as moderator analysis
 model <- lm (Right_DnSeg ~ Amyloid..centiloids. * Sex + samseg_sbtiv ,
              data = dnseg_abcds_df)
 summary(model)
@@ -119,6 +123,7 @@ ggplot(sclimbic_abcds_df,aes(Amyloid..centiloids., Left.Basal.Forebrain)) +
   annotation_custom(grob)
 dev.off()
 
+#sex as moderator analysis
 model <- lm (Left.Basal.Forebrain ~ Amyloid..centiloids. * Sex + samseg_sbtiv, 
              data = sclimbic_abcds_df)
 summary(model)
@@ -143,6 +148,7 @@ ggplot(sclimbic_abcds_df,aes(Amyloid..centiloids., Right.Basal.Forebrain)) +
   annotation_custom(grob)
 dev.off()
 
+#sex as moderator analysis
 model <- lm (Right.Basal.Forebrain ~ Amyloid..centiloids. * Sex + samseg_sbtiv, 
              data = sclimbic_abcds_df)
 summary(model)
@@ -195,6 +201,20 @@ dev.off()
 model <- lm (Amyloid..centiloids. ~ Age * Sex, 
              data = dnseg_abcds_df)
 summary(model)
+
+#use spline Regression, natural spline 3 df
+model <-lm(Amyloid..centiloids. ~ ns(Age, df = 3),
+           data = dnseg_abcds_df)
+summary(model)
+
+ggplot(dnseg_abcds_df) +
+  geom_point(mapping= aes(Age, Amyloid..centiloids.), size=2, color="blue") + 
+  geom_smooth(mapping = aes(x = Age, y = model$fitted.values), col="black")+
+  labs(y="Global Amyloid Accumulation (Centiloids)", x= "Age")+ 
+  theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+                     axis.text=element_text(size=18), axis.title=element_text(size=20))
+dev.off()
 
 #plot age vs BF vol
 
