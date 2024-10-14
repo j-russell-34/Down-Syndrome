@@ -6,12 +6,14 @@ library(readxl)
 library(ggpp)
 library(grid)
 
-dnsegdata_df <- read.csv("ABCDS_DnSeg_volumes.csv")
-sclimbicdata_df <- read.csv("ABCDS_sclimbic_volumes.csv")
-samseg_df <- read.csv("ABCDS_SAMSEG.csv")
-dnseg_abcds_df <- read.csv("ABC-DS DnSeg DF for R 20231221.csv")
-sclimbic_abcds_df <- read.csv("ABC-DS ScLimbic DF for R 20231221.csv")
-ad_diagnosis_df <-read.csv("Diagnostic_Consensus_Classification.csv")
+in_dir <- '/Users/jasonrussell/Documents/Study_data/Down Syndrome/ABCDS'
+
+dnsegdata_df <- read.csv(glue("{in_dir}/ABCDS_DnSeg_volumes.csv"))
+sclimbicdata_df <- read.csv(glue("{in_dir}/ABCDS_sclimbic_volumes.csv"))
+samseg_df <- read.csv(glue("{in_dir}/ABCDS_SAMSEG.csv"))
+dnseg_abcds_df <- read.csv(glue("{in_dir}/ABC-DS DnSeg DF for R 20231221.csv"))
+sclimbic_abcds_df <- read.csv(glue("{in_dir}/ABC-DS ScLimbic DF for R 20231221.csv"))
+ad_diagnosis_df <-read.csv(glue("{in_dir}/Diagnostic_Consensus_Classification.csv"))
 
 #clean ad_diagnosis_df to just include baseline diagnosis
 ad_diagnosis_df <- ad_diagnosis_df[ad_diagnosis_df$event_code =="bl",]
@@ -299,4 +301,12 @@ model <- lm (Right.Basal.Forebrain ~ Age * Sex,
 summary(model)
 
 
+age_avg <-mean(sclimbic_abcds_df$Age, na.rm = TRUE)
+print(age_avg)
+
+min_age <-min(sclimbic_abcds_df$Age, na.rm =TRUE)
+print(min_age)
+
+max_age <- max(sclimbic_abcds_df$Age, na.rm = TRUE)
+print(max_age)
 
